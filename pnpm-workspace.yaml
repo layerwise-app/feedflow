@@ -1,0 +1,6 @@
+minimumReleaseAgeExclude:
+  - '@layerwise/vite'
+
+allowBuilds:
+  esbuild: true
+  workerd: true
