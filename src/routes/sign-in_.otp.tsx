@@ -41,7 +41,7 @@ function EmailOtpPage() {
       const { error } = await authClient.signIn.emailOtp({ email, otp });
       if (error) throw new Error(error.message ?? 'Invalid code');
     },
-    onSuccess: () => navigate({ to: '/dashboard' })
+    onSuccess: () => navigate({ to: '/' })
   });
 
   const resendOtp = useMutation({

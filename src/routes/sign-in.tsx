@@ -50,7 +50,7 @@ function SignInPage() {
       });
       if (error) throw new Error(error.message ?? 'Failed to sign in');
     },
-    onSuccess: () => navigate({ to: '/dashboard' })
+    onSuccess: () => navigate({ to: '/' })
   });
 
   return (

@@ -34,7 +34,7 @@ function SignUpPage() {
       });
       if (error) throw new Error(error.message ?? 'Failed to create account');
     },
-    onSuccess: () => navigate({ to: '/dashboard' })
+    onSuccess: () => navigate({ to: '/' })
   });
 
   return (
