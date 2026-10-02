@@ -1,9 +1,13 @@
 # Layerwise project
 
+<a href="https://layerwise.app"><img src="https://layerwise.app/powered-by.png" alt="Powered by Layerwise" width="320" /></a>
+
 This is the starter used for new Layerwise projects. It is a full-stack React
 app built with TanStack Start and deployed to Cloudflare Workers. The template
 includes Better Auth, a D1 database with Drizzle ORM, Tailwind CSS, shadcn/ui,
 and the Layerwise preview bridge.
+
+Inspired by: <https://en.wikipedia.org/wiki/Google_Reader>
 
 ## Commands
 
