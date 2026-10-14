@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useMutation } from '@tanstack/react-query';
 import { authClient } from '~/lib/auth-client';
+import { AuthShell } from '~/components/auth-shell';
 import { Button } from '~/components/ui/button';
+import { Spinner } from '~/components/ui/spinner';
 import {
   Card,
   CardContent,
@@ -12,8 +14,10 @@ import {
 } from '~/components/ui/card';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
+import { seo } from '~/utils/seo';
 
 export const Route = createFileRoute('/sign-up')({
+  head: () => ({ meta: seo({ title: 'Sign up · Feedflow' }) }),
   component: SignUpPage
 });
 
@@ -34,17 +38,15 @@ function SignUpPage() {
       });
       if (error) throw new Error(error.message ?? 'Failed to create account');
     },
-    onSuccess: () => navigate({ to: '/' })
+    onSuccess: () => navigate({ to: '/dashboard' })
   });
 
   return (
-    <div className='flex min-h-svh items-center justify-center p-4'>
-      <Card className='w-full max-w-sm'>
+    <AuthShell>
+      <Card className='w-full'>
         <CardHeader>
-          <CardTitle>Create an account</CardTitle>
-          <CardDescription>
-            Sign up with your email and password.
-          </CardDescription>
+          <CardTitle className='font-serif text-2xl font-semibold tracking-[-0.015em]'>Create an account</CardTitle>
+          <CardDescription>Your feeds, synced everywhere you read.</CardDescription>
         </CardHeader>
         <CardContent>
           <form
@@ -113,17 +115,18 @@ function SignUpPage() {
               type='submit'
               disabled={!passwordsMatch || signUp.isPending}
             >
-              {signUp.isPending ? 'Creating account…' : 'Create account'}
+              {signUp.isPending && <Spinner />}
+              Create account
             </Button>
             <p className='text-center text-sm text-muted-foreground'>
               Already have an account?{' '}
-              <Link to='/sign-in' className='underline'>
+              <Link to='/sign-in' className='font-medium text-foreground underline-offset-4 hover:underline'>
                 Sign in
               </Link>
             </p>
           </form>
         </CardContent>
       </Card>
-    </div>
+    </AuthShell>
   );
 }

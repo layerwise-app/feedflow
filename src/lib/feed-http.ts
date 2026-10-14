@@ -24,7 +24,7 @@ async function fetchWithRetry(url: URL, deadline: number, validators: FeedValida
     try {
       const headers = new Headers({
         Accept: 'application/atom+xml, application/rss+xml, application/xml, text/xml, text/html;q=0.8, */*;q=0.5',
-        'User-Agent': 'Stillread/1.0 (feed reader)'
+        'User-Agent': 'Feedflow/1.0 (feed reader)'
       });
       if (validators.etag) headers.set('If-None-Match', validators.etag);
       if (validators.lastModified) headers.set('If-Modified-Since', validators.lastModified);

@@ -31,7 +31,7 @@ export function mergeFeedValidators<T extends FeedValidators>(stored: T, receive
 export function createFeedRequestHeaders(validators: FeedValidators = {}) {
   return {
     Accept: 'application/atom+xml, application/rss+xml, application/xml, text/xml, text/html;q=0.8, */*;q=0.5',
-    'User-Agent': 'Stillread/1.0 (feed reader)',
+    'User-Agent': 'Feedflow/1.0 (feed reader)',
     ...(validators.etag ? { 'If-None-Match': validators.etag } : {}),
     ...(validators.lastModified ? { 'If-Modified-Since': validators.lastModified } : {})
   };
@@ -92,10 +92,15 @@ export function validatePublicFeedUrl(value: string, base?: string) {
   return url;
 }
 
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+  mdash: '\u2014', ndash: '\u2013', hellip: '\u2026', lsquo: '\u2018', rsquo: '\u2019',
+  ldquo: '\u201c', rdquo: '\u201d', middot: '\u00b7', bull: '\u2022', copy: '\u00a9', laquo: '\u00ab', raquo: '\u00bb'
+};
+
 function decodeEntities(value: string) {
-  return value.replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi, (entity, token: string) => {
-    const named: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
-    if (token[0] !== '#') return named[token.toLowerCase()] ?? entity;
+  return value.replace(/&(#x[\da-f]+|#\d+|[a-z]+);/gi, (entity, token: string) => {
+    if (token[0] !== '#') return NAMED_ENTITIES[token.toLowerCase()] ?? entity;
     const codePoint = token[1].toLowerCase() === 'x'
       ? Number.parseInt(token.slice(2), 16)
       : Number.parseInt(token.slice(1), 10);
@@ -140,6 +145,29 @@ function plainText(value: string) {
     .slice(0, 12_000);
 }
 
+// Image-only items (comics, photo blogs) carry their words in the image's title or alt text.
+function imageText(value: string) {
+  const markup = decodeNestedEntities(value.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1'));
+  const captions = [...markup.matchAll(/<img\b[^>]*>/gi)].map(([tag]) => {
+    const attribute = (name: string) => tag.match(new RegExp(`\\s${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`, 'i'))?.slice(1).find((part) => part !== undefined) ?? '';
+    return decodeNestedEntities(attribute('title') || attribute('alt')).replace(/\s+/g, ' ').trim();
+  });
+  return [...new Set(captions.filter(Boolean))].join('\n\n').slice(0, 12_000);
+}
+
+// WordPress appends "The post <title> first appeared on <site>." to every item summary.
+function stripFeedFooter(text: string) {
+  return text.replace(/\s*The post .{1,400}? (?:first )?appeared (?:first )?on .{1,200}?\.?$/s, '').trim();
+}
+
+// Link blogs often repeat the headline as the first line of the summary.
+function stripLeadingTitle(text: string, title: string) {
+  const heading = title.trim();
+  if (!heading || text.slice(0, heading.length).toLowerCase() !== heading.toLowerCase()) return text;
+  const rest = text.slice(heading.length);
+  return rest && /^[\s:.–—-]/.test(rest) ? rest.replace(/^[\s:.–—-]+/, '') : text;
+}
+
 function tagValue(markup: string, tag: string) {
   const escaped = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const match = markup.match(new RegExp(`<(?:(?:[\\w.-]+):)?${escaped}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/(?:[\\w.-]+:)?${escaped}\\s*>`, 'i'));
@@ -178,11 +206,13 @@ export function parseFeed(markup: string, pageUrl: URL): ParsedFeed | null {
     } catch {
       itemUrl = pageUrl.href;
     }
+    const title = decodeXml(rawTitle);
+    const body = stripLeadingTitle(stripFeedFooter(plainText(rawDescription) || imageText(rawDescription)), title);
     return {
       id: decodeXml(isAtom ? atomId : rssGuid) || itemUrl,
-      title: decodeXml(rawTitle) || 'Untitled article',
-      body: plainText(rawDescription),
-      excerpt: plainText(rawDescription).slice(0, 360),
+      title: title || 'Untitled article',
+      body,
+      excerpt: body.slice(0, 360),
       url: itemUrl,
       publishedAt: decodeXml(tagValue(entry, 'pubDate') || tagValue(entry, 'published') || tagValue(entry, 'updated') || tagValue(entry, 'date'))
     };

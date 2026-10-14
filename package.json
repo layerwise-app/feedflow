@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite dev",
     "check-types": "tsc --noEmit",
-    "test:feeds": "node --experimental-strip-types --test src/lib/feed-utils.test.mjs",
+    "test:feeds": "node --experimental-strip-types --test src/lib/*.test.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "start": "node .output/server/index.mjs",

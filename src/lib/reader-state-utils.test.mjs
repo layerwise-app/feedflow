@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createLatestSaveQueue, parseReaderSnapshot, removeLegacyDemoFeeds, removeLegacyDemoStories, shouldImportLegacyReaderState, validateReaderSnapshot } from './reader-state-utils.ts';
+import { createLatestSaveQueue, normalizeReaderSnapshot, parseReaderSnapshot, removeLegacyDemoFeeds, removeLegacyDemoStories, shouldImportLegacyReaderState, validateReaderSnapshot } from './reader-state-utils.ts';
 
 const validSnapshot = {
   stories: [{
@@ -19,6 +19,42 @@ const validSnapshot = {
 test('serializes and parses a bounded reader snapshot', () => {
   const serialized = validateReaderSnapshot(validSnapshot);
   assert.deepEqual(parseReaderSnapshot(serialized), validSnapshot);
+});
+
+test('accepts older snapshots and fills new preferences with defaults', () => {
+  const state = normalizeReaderSnapshot(parseReaderSnapshot(validateReaderSnapshot(validSnapshot)));
+  assert.equal(state.layout, 'list');
+  assert.deepEqual(state.reading, { fontSize: 18, font: 'serif', width: 'medium' });
+  assert.equal(state.autoRefreshMinutes, 0);
+  assert.equal(state.autoMarkRead, true);
+});
+
+test('round-trips layout, reading preferences, feed status, and highlights', () => {
+  const snapshot = {
+    ...validSnapshot,
+    layout: 'magazine',
+    reading: { fontSize: 20, font: 'sans', width: 'wide' },
+    autoRefreshMinutes: 30,
+    stories: [{ ...validSnapshot.stories[0], note: 'Follow up', highlights: ['A short summary'] }],
+    feeds: [{ ...validSnapshot.feeds[0], lastFetchedAt: 1_700_000_000_000, error: 'Timed out', renamed: true }]
+  };
+  const parsed = parseReaderSnapshot(validateReaderSnapshot(snapshot));
+  assert.deepEqual(parsed, snapshot);
+  assert.deepEqual(normalizeReaderSnapshot(parsed).reading, snapshot.reading);
+});
+
+test('rejects invalid layout, reading, refresh, highlight, and feed status values', () => {
+  assert.throws(() => validateReaderSnapshot({ ...validSnapshot, layout: 'grid' }), /layout/);
+  assert.throws(() => validateReaderSnapshot({ ...validSnapshot, reading: { fontSize: 40, font: 'serif', width: 'medium' } }), /reading/);
+  assert.throws(() => validateReaderSnapshot({ ...validSnapshot, reading: { fontSize: 18, font: 'mono', width: 'medium' } }), /reading/);
+  assert.throws(() => validateReaderSnapshot({ ...validSnapshot, reading: { fontSize: 18, font: 'serif' } }), /reading/);
+  assert.throws(() => validateReaderSnapshot({ ...validSnapshot, autoRefreshMinutes: 5 }), /auto-refresh/);
+  assert.throws(() => validateReaderSnapshot({ ...validSnapshot, stories: [{ ...validSnapshot.stories[0], highlights: 'text' }] }), /library/);
+  assert.throws(() => validateReaderSnapshot({ ...validSnapshot, stories: [{ ...validSnapshot.stories[0], highlights: ['  '] }] }), /library/);
+  assert.throws(() => validateReaderSnapshot({ ...validSnapshot, stories: [{ ...validSnapshot.stories[0], highlights: Array(51).fill('x') }] }), /library/);
+  assert.throws(() => validateReaderSnapshot({ ...validSnapshot, feeds: [{ ...validSnapshot.feeds[0], lastFetchedAt: 'today' }] }), /Subscription list/);
+  assert.throws(() => validateReaderSnapshot({ ...validSnapshot, feeds: [{ ...validSnapshot.feeds[0], error: 'x'.repeat(301) }] }), /Subscription list/);
+  assert.throws(() => validateReaderSnapshot({ ...validSnapshot, feeds: [{ ...validSnapshot.feeds[0], renamed: 'yes' }] }), /Subscription list/);
 });
 
 test('removes only old demo articles, not fetched or user-added articles', () => {

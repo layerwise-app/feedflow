@@ -48,6 +48,29 @@ test('parses Atom alternate links and uses the canonical feed path', () => {
   assert.equal(parsed.items[0].excerpt, 'Read this & save it.');
 });
 
+test('decodes typographic entities and drops WordPress summary footers', () => {
+  const rss = '<rss><channel><title>Quanta</title><item><guid>q-1</guid><title>Big &amp;mdash; small</title><link>https://feeds.example.org/q-1</link><description>Attention matters &amp;mdash; a lot&amp;hellip; The post Big &amp;#8212; small first appeared on Quanta Magazine.</description></item></channel></rss>';
+  const [item] = parseFeed(rss, new URL('https://feeds.example.org/rss.xml')).items;
+  assert.equal(item.title, 'Big \u2014 small');
+  assert.equal(item.body, 'Attention matters \u2014 a lot\u2026');
+  assert.equal(item.excerpt, item.body);
+});
+
+test('drops a headline repeated at the start of the summary', () => {
+  const atom = '<feed><title>Blog</title><entry><id>b-1</id><title>Redesigning source control</title><link href="https://blog.example.org/b-1"/><summary>&lt;p&gt;Redesigning source control&lt;/p&gt;&lt;p&gt;Interesting piece.&lt;/p&gt;</summary></entry><entry><id>b-2</id><title>Release</title><link href="https://blog.example.org/b-2"/><summary>Released today.</summary></entry></feed>';
+  const [repeated, prefixOnly] = parseFeed(atom, new URL('https://blog.example.org/atom.xml')).items;
+  assert.equal(repeated.body, 'Interesting piece.');
+  assert.equal(prefixOnly.body, 'Released today.');
+});
+
+test('uses image title text for image-only entries', () => {
+  const atom = `<feed><title>Comics</title><entry><id>c-1</id><title>Dogcatcher</title><link href="https://comics.example.org/1/"/><summary type="html">&lt;img src="https://comics.example.org/1.png" title="Voyager 2 'seemed lonely' &amp;amp; quiet." alt="Dogcatcher" /&gt;</summary></entry><entry><id>c-2</id><title>Blank</title><link href="https://comics.example.org/2/"/><summary type="html">&lt;img src="https://comics.example.org/2.png" /&gt;</summary></entry></feed>`;
+  const [captioned, blank] = parseFeed(atom, new URL('https://comics.example.org/atom.xml')).items;
+  assert.equal(captioned.body, "Voyager 2 'seemed lonely' & quiet.");
+  assert.equal(blank.body, '');
+  assert.equal(blank.excerpt, '');
+});
+
 test('rejects executable article schemes and truncates large feeds', () => {
   const items = Array.from({ length: 44 }, (_, index) => `<item><guid>${index}</guid><title>Story ${index}</title><link>javascript:alert(${index})</link></item>`).join('');
   const parsed = parseFeed(`<rss><channel><title>Bounded</title>${items}</channel></rss>`, new URL('https://feeds.example.org/feed.xml'));

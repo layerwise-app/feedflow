@@ -7,7 +7,9 @@ import {
 } from '@tanstack/react-router';
 import { useMutation } from '@tanstack/react-query';
 import { authClient } from '~/lib/auth-client';
+import { AuthShell } from '~/components/auth-shell';
 import { Button } from '~/components/ui/button';
+import { Spinner } from '~/components/ui/spinner';
 import {
   Card,
   CardContent,
@@ -20,8 +22,10 @@ import {
   InputOTPGroup,
   InputOTPSlot
 } from '~/components/ui/input-otp';
+import { seo } from '~/utils/seo';
 
 export const Route = createFileRoute('/sign-in_/otp')({
+  head: () => ({ meta: seo({ title: 'Check your email · Feedflow' }) }),
   validateSearch: (search: Record<string, unknown>) => ({
     email: typeof search.email === 'string' ? search.email.trim() : ''
   }),
@@ -41,7 +45,7 @@ function EmailOtpPage() {
       const { error } = await authClient.signIn.emailOtp({ email, otp });
       if (error) throw new Error(error.message ?? 'Invalid code');
     },
-    onSuccess: () => navigate({ to: '/' })
+    onSuccess: () => navigate({ to: '/dashboard' })
   });
 
   const resendOtp = useMutation({
@@ -55,10 +59,10 @@ function EmailOtpPage() {
   });
 
   return (
-    <div className='flex min-h-svh items-center justify-center p-4'>
-      <Card className='w-full max-w-sm'>
+    <AuthShell>
+      <Card className='w-full'>
         <CardHeader>
-          <CardTitle>Check your email</CardTitle>
+          <CardTitle className='font-serif text-2xl font-semibold tracking-[-0.015em]'>Check your email</CardTitle>
           <CardDescription>
             Enter the six-digit code we sent to {email}.
           </CardDescription>
@@ -97,7 +101,8 @@ function EmailOtpPage() {
               type='submit'
               disabled={otp.length < 6 || verifyOtp.isPending}
             >
-              {verifyOtp.isPending ? 'Verifying…' : 'Verify and sign in'}
+              {verifyOtp.isPending && <Spinner />}
+              Sign in
             </Button>
           </form>
           <div className='flex flex-col items-center gap-2 text-sm'>
@@ -108,23 +113,20 @@ function EmailOtpPage() {
               disabled={resendOtp.isPending}
               onClick={() => resendOtp.mutate()}
             >
-              {resendOtp.isPending
-                ? 'Sending…'
-                : resendOtp.isSuccess
-                  ? 'Code sent'
-                  : 'Resend code'}
+              {resendOtp.isPending && <Spinner />}
+              {resendOtp.isSuccess ? 'Code sent' : 'Resend code'}
             </Button>
             {resendOtp.error ? (
               <p className='text-center text-sm text-destructive'>
                 {resendOtp.error.message}
               </p>
             ) : null}
-            <Link to='/sign-in' className='text-muted-foreground underline'>
+            <Link to='/sign-in' className='text-muted-foreground underline-offset-4 hover:text-foreground hover:underline'>
               Use a different email
             </Link>
           </div>
         </CardContent>
       </Card>
-    </div>
+    </AuthShell>
   );
 }

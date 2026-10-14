@@ -3,7 +3,9 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useMutation } from '@tanstack/react-query';
 import { ChevronDownIcon } from 'lucide-react';
 import { authClient } from '~/lib/auth-client';
+import { AuthShell } from '~/components/auth-shell';
 import { Button } from '~/components/ui/button';
+import { Spinner } from '~/components/ui/spinner';
 import {
   Card,
   CardContent,
@@ -19,8 +21,10 @@ import {
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { Separator } from '~/components/ui/separator';
+import { seo } from '~/utils/seo';
 
 export const Route = createFileRoute('/sign-in')({
+  head: () => ({ meta: seo({ title: 'Sign in · Feedflow' }) }),
   component: SignInPage
 });
 
@@ -50,16 +54,16 @@ function SignInPage() {
       });
       if (error) throw new Error(error.message ?? 'Failed to sign in');
     },
-    onSuccess: () => navigate({ to: '/' })
+    onSuccess: () => navigate({ to: '/dashboard' })
   });
 
   return (
-    <div className='flex min-h-svh items-center justify-center p-4'>
-      <Card className='w-full max-w-sm'>
+    <AuthShell>
+      <Card className='w-full'>
         <CardHeader>
-          <CardTitle>Sign in</CardTitle>
+          <CardTitle className='font-serif text-2xl font-semibold tracking-[-0.015em]'>Sign in</CardTitle>
           <CardDescription>
-            Enter your email and we’ll send you a one-time sign-in code.
+            We’ll email you a one-time code.
           </CardDescription>
         </CardHeader>
         <CardContent className='flex flex-col gap-6'>
@@ -93,12 +97,13 @@ function SignInPage() {
               </p>
             ) : null}
             <Button type='submit' disabled={sendOtp.isPending}>
-              {sendOtp.isPending ? 'Sending code…' : 'Continue with email'}
+              {sendOtp.isPending && <Spinner />}
+              Continue with email
             </Button>
           </form>
           <div className='flex items-center gap-3'>
             <Separator className='flex-1' />
-            <span className='text-xs text-muted-foreground'>OR</span>
+            <span className='text-xs text-muted-foreground'>or</span>
             <Separator className='flex-1' />
           </div>
           <Collapsible>
@@ -135,7 +140,7 @@ function SignInPage() {
                     <Label htmlFor='password'>Password</Label>
                     <Link
                       to='/forgot-password'
-                      className='text-sm text-muted-foreground underline'
+                      className='text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline'
                     >
                       Forgot password?
                     </Link>
@@ -158,21 +163,20 @@ function SignInPage() {
                   </p>
                 ) : null}
                 <Button type='submit' disabled={signInWithPassword.isPending}>
-                  {signInWithPassword.isPending
-                    ? 'Signing in…'
-                    : 'Sign in with password'}
+                  {signInWithPassword.isPending && <Spinner />}
+                  Sign in
                 </Button>
               </form>
             </CollapsibleContent>
           </Collapsible>
           <p className='text-center text-sm text-muted-foreground'>
             Don’t have an account?{' '}
-            <Link to='/sign-up' className='underline'>
+            <Link to='/sign-up' className='font-medium text-foreground underline-offset-4 hover:underline'>
               Sign up
             </Link>
           </p>
         </CardContent>
       </Card>
-    </div>
+    </AuthShell>
   );
 }

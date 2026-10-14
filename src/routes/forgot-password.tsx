@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useMutation } from '@tanstack/react-query';
 import { authClient } from '~/lib/auth-client';
+import { AuthShell } from '~/components/auth-shell';
 import { Button } from '~/components/ui/button';
+import { Spinner } from '~/components/ui/spinner';
 import {
   Card,
   CardContent,
@@ -17,8 +19,10 @@ import {
   InputOTPGroup,
   InputOTPSlot
 } from '~/components/ui/input-otp';
+import { seo } from '~/utils/seo';
 
 export const Route = createFileRoute('/forgot-password')({
+  head: () => ({ meta: seo({ title: 'Reset password · Feedflow' }) }),
   component: ForgotPasswordPage
 });
 
@@ -51,12 +55,12 @@ function ForgotPasswordPage() {
 
   if (resetPassword.isSuccess) {
     return (
-      <div className='flex min-h-svh items-center justify-center p-4'>
-        <Card className='w-full max-w-sm'>
+      <AuthShell>
+        <Card className='w-full'>
           <CardHeader>
-            <CardTitle>Password reset</CardTitle>
+            <CardTitle className='font-serif text-2xl font-semibold tracking-[-0.015em]'>Password reset</CardTitle>
             <CardDescription>
-              Your password has been updated. You can now sign in.
+              You can sign in with your new password.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -65,17 +69,17 @@ function ForgotPasswordPage() {
             </Button>
           </CardContent>
         </Card>
-      </div>
+      </AuthShell>
     );
   }
 
   return (
-    <div className='flex min-h-svh items-center justify-center p-4'>
-      <Card className='w-full max-w-sm'>
+    <AuthShell>
+      <Card className='w-full'>
         <CardHeader>
-          <CardTitle>Reset your password</CardTitle>
+          <CardTitle className='font-serif text-2xl font-semibold tracking-[-0.015em]'>Reset your password</CardTitle>
           <CardDescription>
-            We’ll send a six-digit reset code to your email.
+            We’ll email you a six-digit code.
           </CardDescription>
         </CardHeader>
         <CardContent className='flex flex-col gap-4'>
@@ -105,11 +109,8 @@ function ForgotPasswordPage() {
                   }}
                 />
                 <Button type='submit' disabled={requestReset.isPending}>
-                  {requestReset.isPending
-                    ? 'Sending…'
-                    : requestReset.isSuccess
-                      ? 'Resend code'
-                      : 'Send code'}
+                  {requestReset.isPending && <Spinner />}
+                  {requestReset.isSuccess ? 'Resend code' : 'Send code'}
                 </Button>
               </div>
             </div>
@@ -192,7 +193,8 @@ function ForgotPasswordPage() {
                   otp.length < 6 || !passwordsMatch || resetPassword.isPending
                 }
               >
-                {resetPassword.isPending ? 'Resetting…' : 'Reset password'}
+                {resetPassword.isPending && <Spinner />}
+                Reset password
               </Button>
             </form>
           ) : null}
@@ -201,6 +203,6 @@ function ForgotPasswordPage() {
           </Button>
         </CardContent>
       </Card>
-    </div>
+    </AuthShell>
   );
 }

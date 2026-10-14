@@ -22,7 +22,7 @@ export type FeedStory = {
   url: string;
 };
 
-const COLORS = ['#d74735', '#427c68', '#80719a', '#315f88', '#c1803d'];
+const COLORS = ['#2340E0', '#B4462E', '#6B4FA0', '#9A6410', '#2F4256'];
 
 function formatPublishedDate(value: string) {
   const date = new Date(value);
@@ -45,7 +45,8 @@ export function mergeFeedStories(current: FeedStory[], feed: ParsedFeed) {
       feedUrl: feed.feedUrl,
       initials: feed.title.slice(0, 1).toUpperCase(),
       title: item.title,
-      excerpt: item.excerpt || 'Open the original article to continue reading.',
+      // An empty excerpt is valid; the reader then shows only the link to the original.
+      excerpt: item.excerpt,
       body: item.body,
       feedItemId: item.id,
       time: publishedAt ? formatPublishedDate(item.publishedAt) : existing?.time ?? 'Just added',
