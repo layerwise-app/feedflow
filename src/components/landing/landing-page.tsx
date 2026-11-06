@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router';
 import { ArrowRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { FeedflowLogo, FeedflowMark } from '~/components/brand';
+import { PoweredByLayerwise } from '~/components/powered-by-layerwise';
 import { Button } from '~/components/ui/button';
 import { createDemoState } from '~/lib/demo-snapshot';
 import { cn } from '~/lib/utils';
@@ -89,6 +90,9 @@ export function LandingPage({ signedIn, now }: { signedIn: boolean; now: number 
           <Link to='/demo' className='hover:text-foreground'>Demo</Link>
           <Link to={signedIn ? '/dashboard' : '/sign-in'} className='hover:text-foreground'>{signedIn ? 'Reader' : 'Sign in'}</Link>
           <span>© {new Date(now).getFullYear()}</span>
+        </div>
+        <div className='mx-auto flex max-w-6xl px-5 pb-8 sm:px-8'>
+          <PoweredByLayerwise />
         </div>
       </footer>
     </div>
